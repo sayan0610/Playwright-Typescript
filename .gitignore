@@ -1,0 +1,8 @@
+node-modules
+test-platform/node_modules
+test-platform/.cache
+test-platform/.next
+test-platform/.vercel
+test-platform/.vscode-test
+test-platform/.vscode-test-playwright
+allure-results
