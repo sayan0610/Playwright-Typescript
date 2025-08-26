@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "description": "A project for web and API testing using Playwright with Allure reporting.",
   "scripts": {
-    "test": "playwright test",
-    "test:report": "allure generate allure-results --clean && allure open"
+  "test": "playwright test",
+  "test:ci": "playwright test --reporter=line",
+  "test:report": "allure generate allure-results --clean && allure open",
+  "test:full": "npx playwright install --with-deps && npm run test"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
@@ -15,5 +17,8 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "allure": "^0.0.0"
+  }
 }

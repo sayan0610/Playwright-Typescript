@@ -3,6 +3,8 @@ import AllureReporter from 'allure-playwright';
 
 export default defineConfig({
   testDir: './src/tests',
+  globalSetup: './src/setup/global-setup.ts',
+  globalTeardown: './src/setup/global-teardown.ts',
   reporter: [
     ['allure-playwright', { outputDir: 'allure-results' }],
     ['list'],
