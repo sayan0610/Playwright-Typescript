@@ -3,8 +3,6 @@ import AllureReporter from 'allure-playwright';
 
 export default defineConfig({
   testDir: './src/tests',
-  globalSetup: './src/setup/global-setup.ts',
-  globalTeardown: './src/setup/global-teardown.ts',
   reporter: [
     ['allure-playwright', { outputDir: 'allure-results' }],
     ['list'],
@@ -13,6 +11,12 @@ export default defineConfig({
     trace: 'on-first-retry',
     video: 'retain-on-failure',
     screenshot: 'only-on-failure',
+  },
+  webServer: {
+    command: 'node test-platform/server.js',
+    url: 'http://127.0.0.1:3000',
+    reuseExistingServer: !process.env.CI,
+    timeout: 20_000,
   },
   projects: [
     {

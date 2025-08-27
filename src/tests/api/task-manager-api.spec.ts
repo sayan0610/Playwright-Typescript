@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const API_URL = 'http://localhost:3000/api/tasks';
+const API_URL = 'http://127.0.0.1:3000/api/tasks';
 
 test.describe('Task Manager API', () => {
   test('should fetch all tasks', async ({ request }) => {
