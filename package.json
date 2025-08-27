@@ -19,7 +19,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "allure": "^0.0.0",
-    "test-platform": "file:./test-platform"
+  "allure": "^0.0.0"
   }
 }
