@@ -20,10 +20,21 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+        ${{ runner.os }}-nextjs-
+
+      - name: Install root dependencies
         run: npm install
 
-      - name: Install Playwright Browsers
+      - name: Install test-platform dependencies
+        run: npm install --prefix test-platform
+
+      - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
       - name: Run Playwright tests
