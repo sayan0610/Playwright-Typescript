@@ -20,14 +20,16 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Cache Next.js build
+      - name: Cache npm dependencies
         uses: actions/cache@v4
         with:
-          path: .next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}
+          path: |
+            node_modules
+            test-platform/node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-        ${{ runner.os }}-nextjs-
-
+            ${{ runner.os }}-npm-
+            
       - name: Install root dependencies
         run: npm install
 
