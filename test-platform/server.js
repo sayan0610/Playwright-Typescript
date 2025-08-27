@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 const PORT = 3000;
@@ -7,7 +8,8 @@ const PORT = 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+// Serve static files relative to this file so starting from any CWD works
+app.use(express.static(path.join(__dirname, 'public')));
 
 // In-memory database for tasks
 let tasks = [
