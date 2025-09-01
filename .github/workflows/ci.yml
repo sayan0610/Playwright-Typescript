@@ -66,10 +66,11 @@ jobs:
         run: |
           if [ -f sample-app/package.json ]; then npm install --prefix sample-app --no-audit --no-fund; npm run build --prefix sample-app || true; fi
 
-      - name: Run Playwright tests (matrix: ${{ matrix.browser }})
-        run: npx playwright test --reporter=line --project=${{ matrix.browser }}
+      - name: Run Playwright tests (matrix- ${{ matrix.browser }})
+        run: npx playwright test --reporter=line --project=${{ env.PW_BROWSER }}
         env:
           CI: true
+          PW_BROWSER: ${{ matrix.browser }}
 
       - name: Upload test results (Allure raw, per browser)
         if: always()
