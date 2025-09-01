@@ -10,7 +10,7 @@ on:
       reason:
         description: 'Optional reason for manual run'
         required: false
-        default: 'manual trigger'
+        default: 'manual triggeur'
 
 permissions:
   contents: write
@@ -164,7 +164,7 @@ jobs:
     name: Deploy Allure Report to GitHub Pages
     runs-on: ubuntu-latest
     needs: aggregate-allure
-    if: always() && github.event_name == 'push'
+    if: always()
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
