@@ -6,27 +6,47 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: read
+  checks: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   tests:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    env:
+      PW_BROWSER: ${{ matrix.browser }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+          key: ${{ runner.os }}-nm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nm-
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-
-      - name: Cache test-platform dependencies
-        uses: actions/cache@v4
-        with:
-          path: test-platform/node_modules
-          key: ${{ runner.os }}-tp-npm-${{ hashFiles('test-platform/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-tp-npm-
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
@@ -39,69 +59,94 @@ jobs:
       - name: Install root dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Install test-platform dependencies
-        run: npm install --no-audit --no-fund --prefix test-platform
-
       - name: Install Playwright browsers (if cache miss)
         run: npx playwright install --with-deps || true
 
-      - name: Run Playwright tests
-        run: npm run test:ci
+      - name: Build sample-app (submodule)
+        run: |
+          if [ -f sample-app/package.json ]; then npm install --prefix sample-app --no-audit --no-fund; npm run build --prefix sample-app || true; fi
+
+      - name: Run Playwright tests (matrix: ${{ matrix.browser }})
+        run: npx playwright test --reporter=line --project=${{ matrix.browser }}
         env:
           CI: true
 
-      - name: Upload server log if exists
+      - name: Upload test results (Allure raw, per browser)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: server-log
-          path: test-platform/server.log
-          if-no-files-found: ignore
-
-      - name: Upload test results (Allure raw)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-results
+          name: allure-results-${{ matrix.browser }}
           path: allure-results
           if-no-files-found: ignore
 
-      - name: Generate Allure Report
-        if: always()
-        run: |
-          npm install -g allure-commandline || true
-          sudo apt-get update && sudo apt-get install -y default-jre || true
-          if [ -d allure-results ] && [ "$(ls -A allure-results)" ]; then
-            allure generate allure-results --clean -o allure-report || true
-          fi
-
-      - name: Upload Allure HTML report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-report
-          path: allure-report
-          if-no-files-found: ignore
-
-      - name: Upload Playwright report
-        if: always()
+      - name: Upload Playwright report (only once)
+        if: always() && matrix.browser == 'chromium'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report
           if-no-files-found: ignore
 
-      - name: Upload traces
+      - name: Upload traces (per browser)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-traces
+          name: traces-${{ matrix.browser }}
           path: traces
           if-no-files-found: ignore
 
-      - name: Download Allure HTML report
-        if: always()
+  aggregate-allure:
+    name: Aggregate Allure Report
+    runs-on: ubuntu-latest
+    needs: tests
+    if: always()
+    steps:
+      - name: Checkout (for report hosting context)
+        uses: actions/checkout@v4
+      - name: Download Allure artifacts
         uses: actions/download-artifact@v4
         with:
-          name: allure-report
-          path: allure-report
+          pattern: allure-results-*
+          path: merged-allure-results
+          merge-multiple: true
+      - name: List merged results
+        run: ls -R merged-allure-results || true
+      - name: Install Allure CLI
+        run: |
+          npm install -g allure-commandline || true
+          sudo apt-get update && sudo apt-get install -y default-jre || true
+      - name: Generate merged Allure report
+        run: |
+          if [ -d merged-allure-results ] && [ "$(ls -A merged-allure-results)" ]; then
+            allure generate merged-allure-results --clean -o merged-allure-report || true
+          fi
+      - name: Upload merged Allure HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report-merged
+          path: merged-allure-report
+          if-no-files-found: ignore
+
+  deploy-pages:
+    name: Deploy Allure Report to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: aggregate-allure
+    if: always() && github.event_name == 'push'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download merged Allure HTML report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-report-merged
+          path: site
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
