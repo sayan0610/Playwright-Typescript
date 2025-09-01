@@ -13,11 +13,11 @@ on:
         default: 'manual trigger'
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
-  actions: read
-  checks: read
+  actions: write
+  checks: write
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -175,6 +175,7 @@ jobs:
           name: allure-report-merged
           path: site
       - name: Setup Pages
+        id: setup_pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
