@@ -121,6 +121,11 @@ jobs:
           if [ -d merged-allure-results ] && [ "$(ls -A merged-allure-results)" ]; then
             allure generate merged-allure-results --clean -o merged-allure-report || true
           fi
+          # Ensure directory exists even if generation produced nothing
+          mkdir -p merged-allure-report
+          if [ ! -f merged-allure-report/index.html ]; then
+            echo "<html><body><h2>No Allure results were generated for this run.</h2><p>Check individual browser run artifacts (allure-results-*) for diagnostics.</p></body></html>" > merged-allure-report/index.html
+          fi
       - name: Upload merged Allure HTML report
         uses: actions/upload-artifact@v4
         with:
