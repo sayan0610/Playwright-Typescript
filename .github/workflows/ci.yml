@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Optional reason for manual run'
+        required: false
+        default: 'manual trigger'
 
 permissions:
   contents: read
