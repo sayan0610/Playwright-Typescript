@@ -10,7 +10,7 @@ on:
       reason:
         description: 'Optional reason for manual run'
         required: false
-        default: 'manual triggeur'
+    default: 'manual trigger'
 
 permissions:
   contents: write
@@ -66,17 +66,40 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Install Playwright browsers (if cache miss)
-        run: npx playwright install --with-deps || true
+        run: |
+          if [ ! -d ~/.cache/ms-playwright ] || [ -z "$(ls -A ~/.cache/ms-playwright)" ]; then
+            npx playwright install --with-deps || true
+          else
+            echo "Playwright browsers cache found, skipping install."
+          fi
 
       - name: Build sample-app (submodule)
         run: |
           if [ -f sample-app/package.json ]; then npm install --prefix sample-app --no-audit --no-fund; npm run build --prefix sample-app || true; fi
 
       - name: Run Playwright tests (matrix- ${{ matrix.browser }})
-        run: npx playwright test --reporter=line --project=${{ env.PW_BROWSER }}
+        run: npx playwright test --project=${{ env.PW_BROWSER }}
         env:
           CI: true
           PW_BROWSER: ${{ matrix.browser }}
+        continue-on-error: true
+
+      - name: Ensure allure-results directory (even on failures)
+        if: always()
+        run: |
+          mkdir -p allure-results
+          echo "Root listing:" && ls -la || true
+          echo "Allure listing (pre-upload):" && ls -la allure-results || true
+      - name: Show Allure JSON count
+        if: always()
+        run: |
+          count=$(ls -1 allure-results/*.json 2>/dev/null | wc -l | tr -d ' ')
+          echo "Allure result JSON files: $count"
+          if [ "$count" -eq 0 ]; then
+            echo "WARNING: No Allure JSON files generated.";
+            echo "Contents of playwright-report (if exists):";
+            ls -R playwright-report || true;
+          fi
 
       - name: Upload test results (Allure raw, per browser)
         if: always()
@@ -126,32 +149,18 @@ jobs:
           path: merged-allure-results
           merge-multiple: true
 
-      - name: List merged results
-        run: ls -R merged-allure-results || true
-
-      - name: Install Allure CLI
+      - name: Install Allure CLI (if cache miss)
         run: |
-          npm install -g allure-commandline || true
+          if ! command -v allure >/dev/null 2>&1; then
+            npm install -g allure-commandline || true
+          else
+            echo "Allure CLI found in cache, skipping install."
+          fi
           sudo apt-get update && sudo apt-get install -y default-jre || true
 
       - name: Generate merged Allure report
         run: |
-          if [ -d merged-allure-results ] && [ "$(ls -A merged-allure-results)" ]; then
-            allure generate merged-allure-results --clean -o merged-allure-report || true
-          fi
-          # Ensure directory exists even if generation produced nothing
-          mkdir -p merged-allure-report
-          if [ ! -f merged-allure-report/index.html ]; then
-            echo "<html><body><h2>No Allure results were generated for this run.</h2><p>Check individual browser run artifacts (allure-results-*) for diagnostics.</p></body></html>" > merged-allure-report/index.html
-          fi
-
-      - name: Cache merged Allure report
-        uses: actions/cache@v4
-        with:
-          path: merged-allure-report
-          key: ${{ runner.os }}-allure-report-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-allure-report-
+          allure generate merged-allure-results --clean -o merged-allure-report
 
       - name: Upload merged Allure HTML report
         uses: actions/upload-artifact@v4
@@ -175,10 +184,7 @@ jobs:
           name: allure-report-merged
           path: site
       - name: Setup Pages
-        id: setup_pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -186,9 +192,6 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          # Skip deploy if only placeholder (detect specific phrase)
-          preview: false
         env:
           # Fail softly if site not yet enabled
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

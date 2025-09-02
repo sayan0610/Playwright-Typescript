@@ -1,5 +1,4 @@
 import { defineConfig, devices } from '@playwright/test';
-import AllureReporter from 'allure-playwright';
 
 // Helper to build a webServer config per project on a distinct port.
 // Each browser starts its own instance to avoid shared in-memory task state flakiness.
@@ -20,10 +19,7 @@ export default defineConfig({
   fullyParallel: true,
   // Limit workers in CI if needed (let Playwright decide locally)
   workers: process.env.CI ? 4 : undefined,
-  reporter: [
-    ['allure-playwright', { outputDir: 'allure-results' }],
-    ['list'],
-  ],
+  reporter: [['allure-playwright', { outputDir: 'allure-results' }], ['list']],
   use: {
     trace: 'on-first-retry',
     video: 'retain-on-failure',
