@@ -174,11 +174,6 @@ jobs:
         with:
           name: allure-report-merged
           path: site
-      - name: Setup Pages
-        id: setup_pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -187,8 +182,10 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
         with:
-          # Skip deploy if only placeholder (detect specific phrase)
-          preview: false
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./allure-report
+          publish_branch: allure-report
+          keep_files: false
         env:
           # Fail softly if site not yet enabled
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
