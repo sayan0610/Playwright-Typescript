@@ -131,6 +131,9 @@ jobs:
           path: merged-allure-results
           merge-multiple: true
 
+      - run: ls -la merged-allure-results
+        shell: bash
+
       - name: Install Allure CLI (if cache miss)
         run: |
           if ! command -v allure >/dev/null 2>&1; then
