@@ -160,14 +160,7 @@ jobs:
 
       - name: Generate merged Allure report
         run: |
-          ls -la merged-allure-results
-          if [ -d merged-allure-results ] && [ "$(ls -A merged-allure-results)" ]; then
-            allure generate merged-allure-results --clean -o merged-allure-report || true
-          fi
-          # Ensure directory exists even if generation produced nothing
-          mkdir -p merged-allure-report
-          ls -la merged-allure-report
-          cat merged-allure-report/index.html
+          allure generate merged-allure-results --clean -o merged-allure-report
 
       - name: Cache merged Allure report
         uses: actions/cache@v4
