@@ -10,7 +10,7 @@ on:
       reason:
         description: 'Optional reason for manual run'
         required: false
-    default: 'main'
+  default: 'manual trigger'
 
 permissions:
   contents: write
@@ -83,6 +83,13 @@ jobs:
           CI: true
           PW_BROWSER: ${{ matrix.browser }}
         continue-on-error: true
+
+      - name: Ensure allure-results directory (even on failures)
+        if: always()
+        run: |
+          mkdir -p allure-results
+          ls -la allure-results
+          ls -la allure-results || true
 
       - name: Upload test results (Allure raw, per browser)
         if: always()
