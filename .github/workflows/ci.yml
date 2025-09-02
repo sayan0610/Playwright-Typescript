@@ -78,7 +78,7 @@ jobs:
           if [ -f sample-app/package.json ]; then npm install --prefix sample-app --no-audit --no-fund; npm run build --prefix sample-app || true; fi
 
       - name: Run Playwright tests (matrix- ${{ matrix.browser }})
-        run: npx playwright test --reporter=line --project=${{ env.PW_BROWSER }}
+        run: npx playwright test --project=${{ env.PW_BROWSER }}
         env:
           CI: true
           PW_BROWSER: ${{ matrix.browser }}
@@ -88,8 +88,18 @@ jobs:
         if: always()
         run: |
           mkdir -p allure-results
-          ls -la
-          ls -la allure-results || true
+          echo "Root listing:" && ls -la || true
+          echo "Allure listing (pre-upload):" && ls -la allure-results || true
+      - name: Show Allure JSON count
+        if: always()
+        run: |
+          count=$(ls -1 allure-results/*.json 2>/dev/null | wc -l | tr -d ' ')
+          echo "Allure result JSON files: $count"
+          if [ "$count" -eq 0 ]; then
+            echo "WARNING: No Allure JSON files generated.";
+            echo "Contents of playwright-report (if exists):";
+            ls -R playwright-report || true;
+          fi
 
       - name: Upload test results (Allure raw, per browser)
         if: always()
@@ -137,6 +147,7 @@ jobs:
         with:
           pattern: allure-results-*
           path: merged-allure-results
+          merge-multiple: true
 
       - run: ls -la
         shell: bash
