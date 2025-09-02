@@ -10,7 +10,7 @@ on:
       reason:
         description: 'Optional reason for manual run'
         required: false
-      default: 'manual trigger'
+    default: 'manual trigger'
 
 permissions:
   contents: write
