@@ -149,9 +149,6 @@ jobs:
           path: merged-allure-results
           merge-multiple: true
 
-      - run: ls -la
-        shell: bash
-
       - name: Install Allure CLI (if cache miss)
         run: |
           if ! command -v allure >/dev/null 2>&1; then
@@ -171,9 +168,6 @@ jobs:
           if [ ! -f merged-allure-report/index.html ]; then
             echo "<html><body><h2>No Allure results were generated for this run.</h2><p>Check individual browser run artifacts (allure-results-*) for diagnostics.</p></body></html>" > merged-allure-report/index.html
           fi
-
-      - run: ls -la merged-allure-report
-        shell: bash
 
       - name: Cache merged Allure report
         uses: actions/cache@v4
