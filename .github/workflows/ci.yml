@@ -66,7 +66,12 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Install Playwright browsers (if cache miss)
-        run: npx playwright install --with-deps || true
+        run: |
+          if [ ! -d ~/.cache/ms-playwright ] || [ -z "$(ls -A ~/.cache/ms-playwright)" ]; then
+            npx playwright install --with-deps || true
+          else
+            echo "Playwright browsers cache found, skipping install."
+          fi
 
       - name: Build sample-app (submodule)
         run: |
