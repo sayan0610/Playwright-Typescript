@@ -165,14 +165,6 @@ jobs:
         run: |
           allure generate merged-allure-results --clean -o merged-allure-report
 
-      - name: Cache merged Allure report
-        uses: actions/cache@v4
-        with:
-          path: merged-allure-report
-          key: ${{ runner.os }}-allure-report-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-allure-report-
-
       - name: Upload merged Allure HTML report
         uses: actions/upload-artifact@v4
         with:
