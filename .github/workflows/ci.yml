@@ -150,6 +150,9 @@ jobs:
             echo "<html><body><h2>No Allure results were generated for this run.</h2><p>Check individual browser run artifacts (allure-results-*) for diagnostics.</p></body></html>" > merged-allure-report/index.html
           fi
 
+      - run: ls -la merged-allure-report
+        shell: bash
+
       - name: Cache merged Allure report
         uses: actions/cache@v4
         with:
@@ -179,8 +182,6 @@ jobs:
         with:
           name: allure-report-merged
           path: site
-      - run: ls -la site
-        shell: bash
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload site artifact
