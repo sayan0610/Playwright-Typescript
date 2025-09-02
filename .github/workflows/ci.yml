@@ -131,12 +131,13 @@ jobs:
           path: merged-allure-results
           merge-multiple: true
 
-      - name: List merged results
-        run: ls -R merged-allure-results || true
-
-      - name: Install Allure CLI
+      - name: Install Allure CLI (if cache miss)
         run: |
-          npm install -g allure-commandline || true
+          if ! command -v allure >/dev/null 2>&1; then
+            npm install -g allure-commandline || true
+          else
+            echo "Allure CLI found in cache, skipping install."
+          fi
           sudo apt-get update && sudo apt-get install -y default-jre || true
 
       - name: Generate merged Allure report
