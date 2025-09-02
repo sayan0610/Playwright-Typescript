@@ -129,9 +129,8 @@ jobs:
         with:
           pattern: allure-results-*
           path: merged-allure-results
-          merge-multiple: true
 
-      - run: ls -la merged-allure-results
+      - run: ls -la
         shell: bash
 
       - name: Install Allure CLI (if cache miss)
