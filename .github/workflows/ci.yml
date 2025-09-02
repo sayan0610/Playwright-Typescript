@@ -149,9 +149,6 @@ jobs:
           path: merged-allure-results
           merge-multiple: true
 
-      - run: ls -la merged-allure-results
-        shell: bash
-
       - name: Install Allure CLI (if cache miss)
         run: |
           if ! command -v allure >/dev/null 2>&1; then
@@ -186,8 +183,6 @@ jobs:
         with:
           name: allure-report-merged
           path: site
-      - run: ls -la site
-        shell: bash
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload site artifact
