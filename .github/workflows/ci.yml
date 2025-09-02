@@ -168,9 +168,6 @@ jobs:
           mkdir -p merged-allure-report
           ls -la merged-allure-report
           cat merged-allure-report/index.html
-      # if [ ! -f merged-allure-report/index.html ]; then
-      #   echo "<html><body><h2>No Allure results were generated for this run.</h2><p>Check individual browser run artifacts (allure-results-*) for diagnostics.</p></body></html>" > merged-allure-report/index.html
-      # fi  #
 
       - name: Cache merged Allure report
         uses: actions/cache@v4
