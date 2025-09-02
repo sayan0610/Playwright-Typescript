@@ -183,7 +183,7 @@ jobs:
         uses: actions/deploy-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./allure-report
+          publish_dir: ./allure-report-merged
           publish_branch: allure-report
           keep_files: false
         env:
