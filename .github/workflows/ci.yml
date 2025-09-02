@@ -179,12 +179,15 @@ jobs:
         with:
           name: allure-report-merged
           path: site
+      - run: ls -la site
+        shell: bash
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
+          artifact_name: allure-report-merged
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
