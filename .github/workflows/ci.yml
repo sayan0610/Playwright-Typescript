@@ -73,6 +73,19 @@ jobs:
             echo "Playwright browsers cache found, skipping install."
           fi
 
+      - name: Install system dependencies for WebKit
+        if: matrix.browser == 'webkit'
+        run: |
+          echo "Installing system dependencies required by WebKit"
+          # Always ensure system deps present even if browser cache hit
+          npx playwright install-deps webkit || true
+          # Fallback for missing WOFF2 decoder if still absent
+          if ! ldconfig -p | grep -q libwoff2dec; then
+            echo "libwoff2dec not found; installing fallback packages"
+            sudo apt-get update && sudo apt-get install -y libwoff2dec1 libwoff2-1 || true
+          fi
+          ldconfig -p | (grep libwoff2dec || true)
+
       - name: Build sample-app (submodule)
         run: |
           if [ -f sample-app/package.json ]; then npm install --prefix sample-app --no-audit --no-fund; npm run build --prefix sample-app || true; fi
