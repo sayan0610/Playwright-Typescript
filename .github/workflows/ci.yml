@@ -2,9 +2,9 @@ name: Playwright CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, allure-report]
   pull_request:
-    branches: [main]
+    branches: [main, allure-report]
   workflow_dispatch:
     inputs:
       reason:
