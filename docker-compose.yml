@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:14
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: task_user
+      POSTGRES_PASSWORD: strongpassword
+      POSTGRES_DB: task_storage
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./sample-app/server/database.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U task_user -d task_storage']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+volumes:
+  pgdata:
+    driver: local

@@ -10,7 +10,7 @@ on:
       reason:
         description: 'Optional reason for manual run'
         required: false
-    default: 'manual trigger'
+        default: 'manual trigger'
 
 permissions:
   contents: write
@@ -27,6 +27,20 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: task_user
+          POSTGRES_PASSWORD: strongpassword
+          POSTGRES_DB: task_storage
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U task_user -d task_storage"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     strategy:
       fail-fast: false
       matrix:

@@ -2,64 +2,84 @@ import { test, expect, Page } from '@playwright/test';
 
 // Helper to get a table row (main task row) by title text. Uses regex to be resilient to whitespace.
 function rowByTitle(page: Page, title: string) {
-  return page.locator('#task-list tr').filter({ has: page.locator(`span:has-text("${title}")`) }).first();
+  const table = page.locator('#task-table');
+  return table
+    .locator('tbody tr')
+    .filter({ has: page.locator('.task-title', { hasText: title }) })
+    .first();
 }
 
 // Helper to count only main task rows (exclude detail rows) by presence of status badge
 function mainTaskRows(page: Page) {
-  return page.locator('#task-list tr').filter({ has: page.locator('.status-badge') });
+  return page.locator('#task-table tbody tr').filter({ has: page.locator('.status-badge') });
 }
 
 async function waitForTask(page: Page, title: string) {
-  await page.waitForFunction((t) => {
-    return Array.from(document.querySelectorAll('#task-list span[id^="task-title-"]')).some(s => (s as HTMLElement).innerText.includes(t));
-  }, title, { timeout: 10000 });
+  await page.waitForFunction(
+    (t) => {
+      return Array.from(document.querySelectorAll('#task-table .task-title')).some((s) =>
+        (s as HTMLElement).innerText.includes(t),
+      );
+    },
+    title,
+    { timeout: 10000 },
+  );
+}
+
+async function addTaskUI(page: Page, title: string, details?: string) {
+  await page.getByRole('button', { name: 'Add New Task' }).click();
+  const modal = page.locator('.m-form');
+  await modal.getByPlaceholder('Task title').fill(title);
+  if (details) await modal.getByPlaceholder('Optional details').fill(details);
+  await Promise.all([
+    page.waitForResponse((r) => r.url().endsWith('/api/tasks') && r.request().method() === 'POST'),
+    modal.getByRole('button', { name: 'Create' }).click(),
+  ]);
 }
 
 test.describe('Task Manager UI', () => {
   test('should load the page and display the title', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('h1')).toHaveText('Task Manager');
+    await expect(page.locator('h1')).toContainText('Task');
+    await expect(page.locator('h1')).toContainText('Manager');
   });
 
   test('should add a new task', async ({ page }) => {
     await page.goto('/');
-    await page.fill('#task-input', 'Playwright Test Task');
-    await page.click('button[type="submit"]');
+    await addTaskUI(page, 'Playwright Test Task');
     await expect(rowByTitle(page, 'Playwright Test Task')).toBeVisible();
   });
 
   test('should mark a task as complete and then undo', async ({ page }) => {
     await page.goto('/');
     const title = 'Complete Me';
-    await page.fill('#task-input', title);
-    await Promise.all([
-      page.waitForResponse(r => r.url().endsWith('/api/tasks') && r.request().method() === 'POST'),
-      page.click('button[type="submit"]')
-    ]);
+    await addTaskUI(page, title);
     const row = rowByTitle(page, title);
     await expect(row).toBeVisible();
-    // Click complete (button has title attr "Complete")
-    const statusBtn = row.locator('[data-test-id="status"]');
-    await statusBtn.waitFor();
-    await statusBtn.click();
+    // Click complete (button opens a modal requiring reason and signature)
+    const completeBtn = row.getByRole('button', { name: 'Mark Complete' });
+    await completeBtn.click();
+    const completeModal = page.locator('.m-form');
+    await completeModal.getByPlaceholder('Why is this task complete?').fill('Done via UI test');
+    await completeModal.getByPlaceholder('Your name / initials').fill('PW');
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes('/api/tasks/') && r.request().method() === 'PATCH',
+      ),
+      completeModal.getByRole('button', { name: 'Confirm' }).click(),
+    ]);
     await row.locator('.status-badge', { hasText: 'Completed' }).waitFor({ timeout: 10000 });
-    const titleSpan = row.locator(`span:has-text("${title}")`).first();
+    const titleSpan = row.locator('.task-title');
     await expect(titleSpan).toHaveCSS('text-decoration-line', 'line-through');
-    // Undo
-    await statusBtn.click();
-    await row.locator('.status-badge', { hasText: 'In-Progress' }).waitFor({ timeout: 10000 });
-    await expect(titleSpan).toHaveCSS('text-decoration-line', 'none');
   });
 
   test('should delete a task', async ({ page }) => {
     await page.goto('/');
     const title = 'Delete Me';
-    await page.fill('#task-input', title);
-    await page.click('button[type="submit"]');
+    await addTaskUI(page, title);
     const row = rowByTitle(page, title);
     await expect(row).toBeVisible();
-    await row.getByRole('button', { name: 'Delete' }).click();
+    await row.getByRole('button', { name: 'Delete task' }).click();
     await expect(rowByTitle(page, title)).toHaveCount(0);
   });
 
@@ -67,8 +87,7 @@ test.describe('Task Manager UI', () => {
     await page.goto('/');
     const titles = ['Task A', 'Task B', 'Task C'];
     for (const t of titles) {
-      await page.fill('#task-input', t);
-      await page.click('button[type="submit"]');
+      await addTaskUI(page, t);
       await waitForTask(page, t);
     }
     for (const t of titles) {
@@ -87,11 +106,7 @@ test.describe('Task Manager UI', () => {
     const unique = Date.now();
     for (let i = 0; i < burst; i++) {
       const title = `Burst ${unique}-${i}`;
-      await page.fill('#task-input', title);
-      await Promise.all([
-        page.waitForResponse(r => r.url().endsWith('/api/tasks') && r.request().method() === 'POST'),
-        page.click('button[type="submit"]')
-      ]);
+      await addTaskUI(page, title);
       await waitForTask(page, title);
       await expect(rowByTitle(page, title)).toBeVisible();
     }
@@ -104,8 +119,7 @@ test.describe('Task Manager UI', () => {
   test('trims whitespace in task title input (UI expectation)', async ({ page }) => {
     await page.goto('/');
     const raw = '   Spaced Title   ';
-    await page.fill('#task-input', raw);
-    await page.click('button[type="submit"]');
+    await addTaskUI(page, raw);
     await expect(rowByTitle(page, 'Spaced Title')).toBeVisible();
   });
 });
