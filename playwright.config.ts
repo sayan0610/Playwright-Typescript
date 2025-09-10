@@ -30,10 +30,14 @@ export default defineConfig({
     command:
       // Start Postgres via Docker, wait healthy, then start API and UI
       `bash -lc '
-        docker compose up -d postgres || docker-compose up -d postgres;
-        # Wait for PG to be ready
-        for i in {1..60}; do
-          if docker ps --format "{{.Names}} {{.Status}}" | grep -E "postgres.*(healthy|Up)" >/dev/null; then echo PG ready; break; fi; sleep 2; done;
+        if [ -z "$CI" ]; then
+          docker compose up -d postgres || docker-compose up -d postgres;
+          # Wait for PG to be ready (local Docker only)
+          for i in {1..60}; do
+            if docker ps --format "{{.Names}} {{.Status}}" | grep -E "postgres.*(healthy|Up)" >/dev/null; then echo PG ready; break; fi; sleep 2; done;
+        else
+          echo "CI detected: using GitHub Actions Postgres service on 127.0.0.1:5432";
+        fi
         export PGHOST=127.0.0.1 PGPORT=5432 PGDATABASE=task_storage PGUSER=task_user PGPASSWORD=strongpassword;
         cd sample-app/server && (npm ci || npm install) && npm start &
         cd sample-app/client && (npm ci || npm install) && VITE_API_URL=http://127.0.0.1:3000 npm run dev -- --host 127.0.0.1 --port 5173 --strictPort

@@ -104,6 +104,16 @@ jobs:
         run: |
           if [ -f sample-app/package.json ]; then npm install --prefix sample-app --no-audit --no-fund; npm run build --prefix sample-app || true; fi
 
+      - name: Initialize Postgres schema
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          echo "Waiting for Postgres to be ready..."
+          for i in {1..60}; do
+            if PGPASSWORD=strongpassword psql -h 127.0.0.1 -U task_user -d task_storage -c 'SELECT 1' >/dev/null 2>&1; then
+              echo "Postgres is ready"; break; fi; sleep 2; done
+          echo "Applying schema from sample-app/server/database.sql"
+          PGPASSWORD=strongpassword psql -h 127.0.0.1 -U task_user -d task_storage -f sample-app/server/database.sql
+
       - name: Run Playwright tests (matrix- ${{ matrix.browser }})
         run: npx playwright test --project=${{ env.PW_BROWSER }}
         env:
